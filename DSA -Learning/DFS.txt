@@ -1,0 +1,363 @@
+﻿#include <iostream>
+#include <queue>
+#include <stack>
+using namespace std;
+
+// ============================================================
+//  Node
+// ============================================================
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+    Node(int val) : data(val), left(nullptr), right(nullptr) {}
+};
+
+// ============================================================
+//  BST
+// ============================================================
+class BST {
+private:
+    Node* root;
+
+    // ── helpers ──────────────────────────────────────────────
+
+    void insert(Node*& node, int key) {
+        if (!node) { node = new Node(key); return; }
+        if (key < node->data) insert(node->left,  key);
+        else if (key > node->data) insert(node->right, key);
+    }
+
+    // ── formatting helpers ───────────────────────────────────
+
+    void printSeparator(char c = '=', int n = 60) {
+        for (int i = 0; i < n; i++) cout << c;
+        cout << "\n";
+    }
+
+    void printQueueState(queue<Node*> q) {
+        cout << "  Queue  : [";
+        bool first = true;
+        while (!q.empty()) {
+            if (!first) cout << ", ";
+            cout << q.front()->data;
+            q.pop();
+            first = false;
+        }
+        cout << "]\n";
+    }
+
+    void printStackState(stack<Node*> s) {
+        // print top -> bottom
+        cout << "  Stack  : [";
+        vector<int> tmp;
+        while (!s.empty()) { tmp.push_back(s.top()->data); s.pop(); }
+        for (int i = 0; i < (int)tmp.size(); i++) {
+            if (i) cout << ", ";
+            cout << tmp[i];
+        }
+        cout << "]  <-- top is first\n";
+    }
+
+    void printVisited(const vector<int>& visited) {
+        cout << "  Visited: [";
+        for (int i = 0; i < (int)visited.size(); i++) {
+            if (i) cout << ", ";
+            cout << visited[i];
+        }
+        cout << "]\n";
+    }
+
+    // ── recursive DFS with step counter ─────────────────────
+
+    void inOrderDetailed(Node* node, vector<int>& visited,
+                         stack<int>& callStack, int& step) {
+        if (!node) {
+            step++;
+            cout << "\nStep " << step << ":  inOrder(null) → base case, return\n";
+            printVisited(visited);
+            return;
+        }
+
+        // ---- enter node ----
+        step++;
+        callStack.push(node->data);
+        cout << "\nStep " << step << ":  inOrder(" << node->data << ")\n";
+        cout << "  → go LEFT first  (don't print yet)\n";
+        cout << "  Call stack depth: " << callStack.size() << "\n";
+        printVisited(visited);
+
+        // left
+        inOrderDetailed(node->left, visited, callStack, step);
+
+        // ---- visit ----
+        step++;
+        visited.push_back(node->data);
+        cout << "\nStep " << step << ":  back from left subtree of " << node->data
+             << "  → PRINT " << node->data << "\n";
+        printVisited(visited);
+
+        // right
+        step++;
+        cout << "\nStep " << step << ":  inOrder(" << node->data << ")"
+             << "  → go RIGHT now\n";
+        inOrderDetailed(node->right, visited, callStack, step);
+
+        // ---- leave ----
+        callStack.pop();
+    }
+
+    void preOrderDetailed(Node* node, vector<int>& visited,
+                          stack<int>& callStack, int& step) {
+        if (!node) {
+            step++;
+            cout << "\nStep " << step << ":  preOrder(null) → base case, return\n";
+            printVisited(visited);
+            return;
+        }
+
+        step++;
+        callStack.push(node->data);
+
+        // ---- visit FIRST ----
+        visited.push_back(node->data);
+        cout << "\nStep " << step << ":  preOrder(" << node->data << ")"
+             << "  → PRINT " << node->data << " first\n";
+        cout << "  → then go LEFT\n";
+        printVisited(visited);
+
+        preOrderDetailed(node->left,  visited, callStack, step);
+
+        step++;
+        cout << "\nStep " << step << ":  back to " << node->data
+             << "  → go RIGHT now\n";
+        preOrderDetailed(node->right, visited, callStack, step);
+
+        callStack.pop();
+    }
+
+    void postOrderDetailed(Node* node, vector<int>& visited,
+                           stack<int>& callStack, int& step) {
+        if (!node) {
+            step++;
+            cout << "\nStep " << step << ":  postOrder(null) → base case, return\n";
+            printVisited(visited);
+            return;
+        }
+
+        step++;
+        callStack.push(node->data);
+        cout << "\nStep " << step << ":  postOrder(" << node->data << ")"
+             << "  → go LEFT (don't print yet)\n";
+        printVisited(visited);
+
+        postOrderDetailed(node->left,  visited, callStack, step);
+
+        step++;
+        cout << "\nStep " << step << ":  back to " << node->data
+             << "  → go RIGHT (still don't print)\n";
+        postOrderDetailed(node->right, visited, callStack, step);
+
+        // ---- visit LAST ----
+        step++;
+        visited.push_back(node->data);
+        cout << "\nStep " << step << ":  both children done  → PRINT " << node->data << "\n";
+        printVisited(visited);
+
+        callStack.pop();
+    }
+
+public:
+    BST() : root(nullptr) {}
+
+    void insert(int key) { insert(root, key); }
+
+    // =========================================================
+    //  1.  InOrder Detailed
+    // =========================================================
+    void inOrderDetailed() {
+        printSeparator();
+        cout << "  INORDER TRAVERSAL  (Left -> Root -> Right)\n";
+        cout << "  In a BST this always gives SORTED output!\n";
+        printSeparator();
+
+        if (!root) { cout << "Tree is empty!\n"; return; }
+
+        vector<int> visited;
+        stack<int>  callStack;
+        int step = 0;
+
+        cout << "\nStarting inOrder(" << root->data << ")\n";
+        inOrderDetailed(root, visited, callStack, step);
+
+        cout << "\n";
+        printSeparator('-');
+        cout << "  Final result  : ";
+        for (int i = 0; i < (int)visited.size(); i++) {
+            if (i) cout << " -> ";
+            cout << visited[i];
+        }
+        cout << "\n  Total steps   : " << step << "\n";
+        printSeparator('-');
+    }
+
+    // =========================================================
+    //  2.  PreOrder Detailed
+    // =========================================================
+    void preOrderDetailed() {
+        printSeparator();
+        cout << "  PREORDER TRAVERSAL  (Root -> Left -> Right)\n";
+        cout << "  Root is ALWAYS the first node visited.\n";
+        printSeparator();
+
+        if (!root) { cout << "Tree is empty!\n"; return; }
+
+        vector<int> visited;
+        stack<int>  callStack;
+        int step = 0;
+
+        cout << "\nStarting preOrder(" << root->data << ")\n";
+        preOrderDetailed(root, visited, callStack, step);
+
+        cout << "\n";
+        printSeparator('-');
+        cout << "  Final result  : ";
+        for (int i = 0; i < (int)visited.size(); i++) {
+            if (i) cout << " -> ";
+            cout << visited[i];
+        }
+        cout << "\n  Total steps   : " << step << "\n";
+        printSeparator('-');
+    }
+
+    // =========================================================
+    //  3.  PostOrder Detailed
+    // =========================================================
+    void postOrderDetailed() {
+        printSeparator();
+        cout << "  POSTORDER TRAVERSAL  (Left -> Right -> Root)\n";
+        cout << "  Root is ALWAYS the last node visited.\n";
+        printSeparator();
+
+        if (!root) { cout << "Tree is empty!\n"; return; }
+
+        vector<int> visited;
+        stack<int>  callStack;
+        int step = 0;
+
+        cout << "\nStarting postOrder(" << root->data << ")\n";
+        postOrderDetailed(root, visited, callStack, step);
+
+        cout << "\n";
+        printSeparator('-');
+        cout << "  Final result  : ";
+        for (int i = 0; i < (int)visited.size(); i++) {
+            if (i) cout << " -> ";
+            cout << visited[i];
+        }
+        cout << "\n  Total steps   : " << step << "\n";
+        printSeparator('-');
+    }
+
+    // =========================================================
+    //  4.  BFS Detailed  (same style as original breadthFirstDetailed)
+    // =========================================================
+    void bfsDetailed() {
+        printSeparator();
+        cout << "  BFS TRAVERSAL  (Level by Level)\n";
+        cout << "  Uses a QUEUE (FIFO) — visits each level left to right.\n";
+        printSeparator();
+
+        if (!root) { cout << "Tree is empty!\n"; return; }
+
+        queue<Node*> q;
+        q.push(root);
+        vector<int> visited;
+
+        int step = 0;
+        cout << "\nStep " << step << ":  enqueue root\n";
+        printQueueState(q);
+
+        while (!q.empty()) {
+            step++;
+            Node* current = q.front();
+            q.pop();
+            visited.push_back(current->data);
+
+            cout << "\nStep " << step << ":  dequeue " << current->data
+                 << "  → PRINT " << current->data << "\n";
+
+            if (current->left) {
+                cout << "  enqueue left  child: " << current->left->data << "\n";
+                q.push(current->left);
+            } else {
+                cout << "  no left child\n";
+            }
+
+            if (current->right) {
+                cout << "  enqueue right child: " << current->right->data << "\n";
+                q.push(current->right);
+            } else {
+                cout << "  no right child\n";
+            }
+
+            printQueueState(q);
+            printVisited(visited);
+        }
+
+        cout << "\n";
+        printSeparator('-');
+        cout << "  Final result  : ";
+        for (int i = 0; i < (int)visited.size(); i++) {
+            if (i) cout << " -> ";
+            cout << visited[i];
+        }
+        cout << "\n  Total steps   : " << step << "\n";
+        printSeparator('-');
+    }
+};
+
+// ============================================================
+//  main
+// ============================================================
+int main() {
+    BST tree;
+
+    // Tree from the lecture:
+    //          13
+    //         /  \
+    //        10   25
+    //       / \   / \
+    //      2  12  20 31
+    //                \
+    //                29
+
+    tree.insert(13);
+    tree.insert(10);
+    tree.insert(25);
+    tree.insert(2);
+    tree.insert(12);
+    tree.insert(20);
+    tree.insert(31);
+    tree.insert(29);
+
+    cout << "\n";
+    cout << "Tree:\n";
+    cout << "         13\n";
+    cout << "        /  \\\n";
+    cout << "       10   25\n";
+    cout << "      / \\   / \\\n";
+    cout << "     2  12  20 31\n";
+    cout << "                \\\n";
+    cout << "                29\n\n";
+
+    tree.inOrderDetailed();
+    cout << "\n\n";
+    tree.preOrderDetailed();
+    cout << "\n\n";
+    tree.postOrderDetailed();
+    cout << "\n\n";
+    tree.bfsDetailed();
+
+    return 0;
+}
